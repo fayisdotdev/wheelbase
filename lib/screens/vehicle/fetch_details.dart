@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
 import 'package:wheelbase/models/vehicles_model.dart';
+import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
 
 class VehicleListPage extends StatefulWidget {
   const VehicleListPage({super.key});
@@ -16,8 +17,15 @@ class _VehicleListPageState extends State<VehicleListPage> {
   @override
   void initState() {
     super.initState();
+    _loadVehicles();
+  }
+
+  void _loadVehicles() {
     _vehiclesFuture = context.read<VehicleProvider>().fetchVehicles();
   }
+
+  String formatDate(DateTime? dt) =>
+      dt != null ? "${dt.toLocal().toString().split(' ')[0]}" : "N/A";
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +53,7 @@ class _VehicleListPageState extends State<VehicleListPage> {
             itemCount: vehicles.length,
             itemBuilder: (context, index) {
               final v = vehicles[index];
+
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: Padding(
@@ -52,24 +61,48 @@ class _VehicleListPageState extends State<VehicleListPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Owner: ${v.ownerName}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text("Vehicle ID: ${v.vehicleId}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text("Owner: ${v.ownerName}"),
                       Text("Vehicle: ${v.vehicleName} (${v.vehicleYear})"),
                       Text("Number: ${v.vehicleNumber}"),
                       Text("Service KM: ${v.serviceKm}"),
-                      Text("Insurance: ${v.insuranceStarts?.toLocal()} - ${v.insuranceEnds?.toLocal()}"),
-                      Text("Pollution: ${v.pollutionStarts?.toLocal()} - ${v.pollutionEnds?.toLocal()}"),
+                      Text("Insurance: ${formatDate(v.insuranceStarts)} - ${formatDate(v.insuranceEnds)}"),
+                      Text("Pollution: ${formatDate(v.pollutionStarts)} - ${formatDate(v.pollutionEnds)}"),
                       Text("Battery: ${v.battery ?? 'N/A'}"),
                       Text("Alignment: ${v.alignment ?? 'N/A'}"),
                       Text("Notes: ${v.notes ?? 'N/A'}"),
                       Text("Need Notification: ${v.needNotification ? "Yes" : "No"}"),
                       Text("Shared With: ${v.sharedWith ? "Yes" : "No"}"),
                       Text("Uploaded By: ${v.vehicleAddedBy}"),
-                      // Text("Uploaded At: ${v.uploadedAt.toLocal()}"),
+                      Text("Created At: ${formatDate(v.createdAt)}"),
+                      Text("Uploaded At: ${formatDate(v.uploadedAt)}"),
                       if (v.imageUrl != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Image.network(v.imageUrl!, height: 100, fit: BoxFit.cover),
                         ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            // Navigate to AddVehiclePage with the vehicle to edit
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AddVehiclePage(vehicle: v),
+                              ),
+                            );
+
+                            // If edited, refresh the list
+                            if (result == true) {
+                              setState(() => _loadVehicles());
+                            }
+                          },
+                          icon: const Icon(Icons.edit),
+                          label: const Text("Edit"),
+                        ),
+                      ),
                     ],
                   ),
                 ),
