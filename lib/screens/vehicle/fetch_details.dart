@@ -38,9 +38,18 @@ class _VehicleListPageState extends State<VehicleListPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // ...existing code...
           if (snapshot.hasError) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Error fetching vehicles: ${snapshot.error}"),
+                ),
+              );
+            });
             return Center(child: Text("Error: ${snapshot.error}"));
           }
+          // ...existing code...
 
           final vehicles = snapshot.data ?? [];
 
@@ -61,26 +70,66 @@ class _VehicleListPageState extends State<VehicleListPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Vehicle ID: ${v.vehicleId}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        "Vehicle ID: ${v.vehicleId}",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       Text("Owner: ${v.ownerName}"),
                       Text("Vehicle: ${v.vehicleName} (${v.vehicleYear})"),
                       Text("Number: ${v.vehicleNumber}"),
                       Text("Service KM: ${v.serviceKm}"),
-                      Text("Insurance: ${formatDate(v.insuranceStarts)} - ${formatDate(v.insuranceEnds)}"),
-                      Text("Pollution: ${formatDate(v.pollutionStarts)} - ${formatDate(v.pollutionEnds)}"),
+                      Text(
+                        "Insurance: ${formatDate(v.insuranceStarts)} - ${formatDate(v.insuranceEnds)}",
+                      ),
+                      Text(
+                        "Pollution: ${formatDate(v.pollutionStarts)} - ${formatDate(v.pollutionEnds)}",
+                      ),
                       Text("Battery: ${v.battery ?? 'N/A'}"),
                       Text("Alignment: ${v.alignment ?? 'N/A'}"),
                       Text("Notes: ${v.notes ?? 'N/A'}"),
-                      Text("Need Notification: ${v.needNotification ? "Yes" : "No"}"),
+                      Text(
+                        "Need Notification: ${v.needNotification ? "Yes" : "No"}",
+                      ),
                       Text("Shared With: ${v.sharedWith ? "Yes" : "No"}"),
                       Text("Uploaded By: ${v.vehicleAddedBy}"),
                       Text("Created At: ${formatDate(v.createdAt)}"),
                       Text("Uploaded At: ${formatDate(v.uploadedAt)}"),
+                      // ...existing code...
                       if (v.imageUrl != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
-                          child: Image.network(v.imageUrl!, height: 100, fit: BoxFit.cover),
+                          child: FutureBuilder<String?>(
+                            future: context
+                                .read<VehicleProvider>()
+                                .getSignedImageUrl(
+                                  // Extract just the path from the public URL if needed
+                                  v.imageUrl!.replaceFirst(
+                                    RegExp(r'^.*vehicle-images2/'),
+                                    '',
+                                  ),
+                                ),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const SizedBox(
+                                  height: 100,
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+                              if (snapshot.hasError || snapshot.data == null) {
+                                return const Text("Image unavailable");
+                              }
+                              return Image.network(
+                                snapshot.data!,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          ),
                         ),
+                      // ...existing code...
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,

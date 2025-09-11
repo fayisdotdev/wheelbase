@@ -38,3 +38,72 @@
 
 alter table public.vehicles
 add column created_at timestamp with time zone not null default now();
+
+
+-- edit vehicles
+-- -- alter table public.vehicles enable row level security;
+
+-- -- Allow insert only if user_auth_uuid matches the logged-in user
+-- create policy "Users can insert their own vehicles"
+-- on public.vehicles for insert
+-- with check (auth.uid() = user_auth_uuid);
+
+-- -- Allow select only their own vehicles
+-- create policy "Users can view their own vehicles"
+-- on public.vehicles for select
+-- using (auth.uid() = user_auth_uuid);
+
+-- Allow update only if the user owns the vehicle
+create policy "Users can update their own vehicles"
+on public.vehicles
+for update
+using (auth.uid() = user_auth_uuid)
+with check (auth.uid() = user_auth_uuid);
+
+-- Delete: Users can delete only their own vehicles
+CREATE POLICY "Users can delete their own vehicles"
+ON public.vehicles
+FOR DELETE
+USING (auth.uid() = user_auth_uuid);
+
+
+-- vehicle image upload to bucket 
+-- -- Allow authenticated users to upload to their own folder inside test-images
+-- create policy "Users can upload to their folder vehicle images"
+-- on storage.objects
+-- for insert
+-- to authenticated
+-- with check (
+--   bucket_id = 'vehicle-images'
+--   and (storage.foldername(name))[1] = auth.uid()::text
+-- );
+
+-- -- Allow authenticated users to read their own files
+-- create policy "Users can read their own files vehicle images"
+-- on storage.objects
+-- for select
+-- to authenticated
+-- using (
+--   bucket_id = 'vehicle-images'
+--   and (storage.foldername(name))[1] = auth.uid()::text
+-- );
+
+-- -- Allow authenticated users to delete their own files
+-- create policy "Users can delete their own files vehicle images"
+-- on storage.objects
+-- for delete
+-- to authenticated
+-- using (
+--   bucket_id = 'vehicle-images'
+--   and (storage.foldername(name))[1] = auth.uid()::text
+-- );
+
+-- Allow authenticated users to update their own files
+create policy "Users can update their own files vehicle images"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'vehicle-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);

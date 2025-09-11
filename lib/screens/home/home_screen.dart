@@ -4,6 +4,7 @@ import 'package:wheelbase/provider/auth_provider.dart';
 import 'package:wheelbase/screens/profile/profile_page.dart';
 import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
 import 'package:wheelbase/screens/vehicle/fetch_details.dart';
+// import 'package:wheelbase/screens/vehicle/test_upload.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -68,6 +69,16 @@ class HomePage extends StatelessWidget {
               },
               child: const Text("View Vehicles"),
             ),
+            // const SizedBox(height: 16),
+            // ElevatedButton(
+            //   onPressed: () {
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(builder: (_) => TestUploadPage()),
+            //     );
+            //   },
+            //   child: const Text("test upload"),
+            // ),
 
           ],
         ),
