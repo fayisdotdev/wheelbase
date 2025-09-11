@@ -91,17 +91,23 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
       }
 
       final vehicle = VehicleModel(
-        id: const Uuid().v4(),
         vehicleId: const Uuid().v4(),
         ownerName: _ownerController.text.trim(),
         vehicleName: _vehicleNameController.text.trim(),
         vehicleNumber: _vehicleNumberController.text.trim(),
         vehicleYear: _vehicleYearController.text.trim(),
-        insuranceStarts: _insuranceStarts!,
-        insuranceEnds: _insuranceEnds!,
-        pollutionStarts: _pollutionStarts!,
-        pollutionEnds: _pollutionEnds!,
-        serviceKm: _serviceKmController.text.trim(),
+        userAuthUuid: user.id,
+        vehicleAddedBy: user.email ?? "Unknown",
+
+        // optional fields
+        createdAt: DateTime.now(),
+        insuranceStarts: _insuranceStarts,
+        insuranceEnds: _insuranceEnds,
+        pollutionStarts: _pollutionStarts,
+        pollutionEnds: _pollutionEnds,
+        serviceKm: _serviceKmController.text.trim().isEmpty
+            ? null
+            : _serviceKmController.text.trim(),
         battery: _batteryController.text.trim().isEmpty
             ? null
             : _batteryController.text.trim(),
@@ -113,10 +119,7 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
             : _notesController.text.trim(),
         needNotification: _needNotification,
         sharedWith: _sharedWith,
-        vehicleAddedBy: user.id,
         imageUrl: imageUrl,
-        userAuthUuid: user.id,
-        uploadedAt: DateTime.now(),
       );
 
       final success = await vehicleProvider.addVehicle(vehicle);
@@ -216,7 +219,6 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
                 TextFormField(
                   controller: _serviceKmController,
                   decoration: const InputDecoration(labelText: "Service KM"),
-                  validator: (val) => val == null || val.isEmpty ? "Required" : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
