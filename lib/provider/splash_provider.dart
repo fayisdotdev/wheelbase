@@ -12,21 +12,24 @@ class SplashProvider extends ChangeNotifier {
 
   SplashProvider();
 
-  Future<void> init(BuildContext context) async {
-    await Future.delayed(const Duration(seconds: 2));
+Future<void> init(BuildContext context) async {
+  // 👇 Wake up Supabase here
+  await Provider.of<AuthProvider>(context, listen: false).pingSupabase();
 
-    final session = Supabase.instance.client.auth.currentSession;
+  await Future.delayed(const Duration(seconds: 3));
 
-    if (session != null) {
-      // Use the AuthProvider from context
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.fetchUserProfile(session.user.id);
+  final session = Supabase.instance.client.auth.currentSession;
 
-      _nextScreen = const HomePage();
-    } else {
-      _nextScreen = const LoginScreen();
-    }
+  if (session != null) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.fetchUserProfile(session.user.id);
 
-    notifyListeners();
+    _nextScreen = const HomePage();
+  } else {
+    _nextScreen = const LoginScreen();
   }
+
+  notifyListeners();
+}
+
 }

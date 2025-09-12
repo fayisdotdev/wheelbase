@@ -166,5 +166,13 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 }
+Future<void> pingSupabase() async {
+  try {
+    await Supabase.instance.client.from('vehicles').select().limit(1);
+  } catch (e) {
+    print('Ping failed: $e');
+  }
+}
+
 
 }

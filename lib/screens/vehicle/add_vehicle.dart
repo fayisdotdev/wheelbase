@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// lib/pages/add_vehicle_page.dart
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -10,7 +10,7 @@ import 'package:wheelbase/models/vehicles_model.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
 
 class AddVehiclePage extends StatefulWidget {
-  final VehicleModel? vehicle; // optional vehicle for editing
+  final VehicleModel? vehicle;
 
   const AddVehiclePage({super.key, this.vehicle});
 
@@ -75,7 +75,7 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
     if (picked != null) {
       setState(() {
         _imageFile = File(picked.path);
-        _existingImageUrl = null; // clear existing image if new one picked
+        _existingImageUrl = null;
       });
     }
   }
@@ -119,7 +119,6 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
       final vehicleProvider = context.read<VehicleProvider>();
       String? imageUrl = _existingImageUrl;
 
-      // ...existing code...
       if (_imageFile != null) {
         imageUrl = await vehicleProvider.uploadImage(_imageFile!);
         if (imageUrl == null) {
@@ -128,7 +127,6 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
           ).showSnackBar(const SnackBar(content: Text("Image upload failed!")));
         }
       }
-      // ...existing code...
 
       final vehicle = VehicleModel(
         vehicleId: widget.vehicle?.vehicleId ?? const Uuid().v4(),
@@ -198,25 +196,68 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
     }
   }
 
-  Widget _buildDateField(
-    String label,
-    DateTime? value,
-    Function(DateTime) onPicked,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            value != null
-                ? "$label: ${value.toLocal().toString().split(' ')[0]}"
-                : "$label: Not selected",
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String hint,
+    IconData? icon,
+    String? Function(String?)? validator,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: TextFormField(
+        controller: controller,
+        validator: validator,
+        decoration: InputDecoration(
+          prefixIcon: icon != null ? Icon(icon) : null,
+          hintText: hint,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _dateField({
+    required String label,
+    required DateTime? date,
+    required Function(DateTime) onPicked,
+    IconData icon = Icons.calendar_today,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.blueAccent),
+        title: Text(label),
+        subtitle: Text(
+          date != null
+              ? "${date.toLocal().toString().split(' ')[0]}"
+              : "Not selected",
+          style: TextStyle(
+            color: date != null ? Colors.black : Colors.grey,
           ),
         ),
-        TextButton(
-          onPressed: () => _pickDate(onPicked),
-          child: const Text("Pick Date"),
-        ),
-      ],
+        trailing: const Icon(Icons.edit_calendar),
+        onTap: () async {
+          await _pickDate(onPicked);
+        },
+      ),
     );
   }
 
@@ -236,179 +277,207 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        elevation: 0,
         title: Text(widget.vehicle != null ? "Edit Vehicle" : "Add Vehicle"),
+        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _ownerController,
-                  decoration: const InputDecoration(labelText: "Owner Name"),
-                  validator: (val) =>
-                      val == null || val.isEmpty ? "Required" : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _vehicleNameController,
-                  decoration: const InputDecoration(labelText: "Vehicle Name"),
-                  validator: (val) =>
-                      val == null || val.isEmpty ? "Required" : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _vehicleNumberController,
-                  decoration: const InputDecoration(
-                    labelText: "Vehicle Number",
-                  ),
-                  validator: (val) =>
-                      val == null || val.isEmpty ? "Required" : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _vehicleYearController,
-                  decoration: const InputDecoration(labelText: "Vehicle Year"),
-                  validator: (val) =>
-                      val == null || val.isEmpty ? "Required" : null,
-                ),
-                const SizedBox(height: 12),
-                _buildDateField(
-                  "Insurance Start",
-                  _insuranceStarts,
-                  (date) => setState(() => _insuranceStarts = date),
-                ),
-                _buildDateField(
-                  "Insurance End",
-                  _insuranceEnds,
-                  (date) => setState(() => _insuranceEnds = date),
-                ),
-                _buildDateField(
-                  "Pollution Start",
-                  _pollutionStarts,
-                  (date) => setState(() => _pollutionStarts = date),
-                ),
-                _buildDateField(
-                  "Pollution End",
-                  _pollutionEnds,
-                  (date) => setState(() => _pollutionEnds = date),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _serviceKmController,
-                  decoration: const InputDecoration(labelText: "Service KM"),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _batteryController,
-                  decoration: const InputDecoration(
-                    labelText: "Battery (Optional)",
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _alignmentController,
-                  decoration: const InputDecoration(
-                    labelText: "Alignment (Optional)",
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: "Notes (Optional)",
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  title: const Text("Need Notifications"),
-                  value: _needNotification,
-                  onChanged: (val) => setState(() => _needNotification = val),
-                ),
-                SwitchListTile(
-                  title: const Text("Shared With Others"),
-                  value: _sharedWith,
-                  onChanged: (val) => setState(() => _sharedWith = val),
-                ),
-                const SizedBox(height: 16),
-                Row(
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Vehicle Image
+              Center(
+                child: Stack(
                   children: [
-                    _imageFile != null
-                        ? Image.file(
-                            _imageFile!,
-                            height: 80,
-                            width: 80,
-                            fit: BoxFit.cover,
-                          )
-                        : _existingImageUrl != null
-                        ? FutureBuilder<String?>(
-                            future: context
-                                .read<VehicleProvider>()
-                                .getSignedImageUrl(
-                                  _existingImageUrl!.replaceFirst(
-                                    RegExp(r'^.*vehicle-images2/'),
-                                    '',
-                                  ),
-                                ),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const SizedBox(
-                                  height: 80,
-                                  width: 80,
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                );
-                              }
-                              if (snapshot.hasError || snapshot.data == null) {
-                                return Container(
-                                  height: 80,
-                                  width: 80,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: _imageFile != null
+                          ? Image.file(
+                              _imageFile!,
+                              height: 150,
+                              width: 150,
+                              fit: BoxFit.cover,
+                            )
+                          : _existingImageUrl != null
+                              ? FutureBuilder<String?>(
+                                  future: context
+                                      .read<VehicleProvider>()
+                                      .getSignedImageUrl(
+                                        _existingImageUrl!.replaceFirst(
+                                          RegExp(r'^.*vehicle-images2/'),
+                                          '',
+                                        ),
+                                      ),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return const SizedBox(
+                                        height: 150,
+                                        width: 150,
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    }
+                                    if (snapshot.hasError ||
+                                        snapshot.data == null) {
+                                      return Container(
+                                        height: 150,
+                                        width: 150,
+                                        color: Colors.grey.shade300,
+                                        child: const Icon(Icons.broken_image,
+                                            size: 40),
+                                      );
+                                    }
+                                    return Image.network(
+                                      snapshot.data!,
+                                      height: 150,
+                                      width: 150,
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  height: 150,
+                                  width: 150,
                                   color: Colors.grey.shade300,
-                                  child: const Icon(Icons.broken_image),
-                                );
-                              }
-                              return Image.network(
-                                snapshot.data!,
-                                height: 80,
-                                width: 80,
-                                fit: BoxFit.cover,
-                              );
-                            },
-                          )
-                        : Container(
-                            height: 80,
-                            width: 80,
-                            color: Colors.grey.shade300,
-                            child: const Icon(Icons.directions_car),
-                          ),
-
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.upload),
-                      label: const Text("Pick Image (Optional)"),
+                                  child: const Icon(Icons.directions_car,
+                                      size: 50),
+                                ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: FloatingActionButton.small(
+                        heroTag: "pickImage",
+                        onPressed: _pickImage,
+                        child: const Icon(Icons.camera_alt),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _isLoading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                        onPressed: _saveVehicle,
-                        child: Text(
-                          widget.vehicle != null
-                              ? "Update Vehicle"
-                              : "Save Vehicle",
+              ),
+
+              _sectionTitle("Basic Information"),
+              _inputField(
+                controller: _ownerController,
+                hint: "Owner Name",
+                icon: Icons.person,
+                validator: (val) =>
+                    val == null || val.isEmpty ? "Required" : null,
+              ),
+              _inputField(
+                controller: _vehicleNameController,
+                hint: "Vehicle Name",
+                icon: Icons.directions_car,
+                validator: (val) =>
+                    val == null || val.isEmpty ? "Required" : null,
+              ),
+              _inputField(
+                controller: _vehicleNumberController,
+                hint: "Vehicle Number",
+                icon: Icons.confirmation_number,
+                validator: (val) =>
+                    val == null || val.isEmpty ? "Required" : null,
+              ),
+              _inputField(
+                controller: _vehicleYearController,
+                hint: "Vehicle Year",
+                icon: Icons.calendar_month,
+                validator: (val) =>
+                    val == null || val.isEmpty ? "Required" : null,
+              ),
+
+              _sectionTitle("Insurance Details"),
+              _dateField(
+                label: "Insurance Start",
+                date: _insuranceStarts,
+                onPicked: (picked) => setState(() => _insuranceStarts = picked),
+              ),
+              _dateField(
+                label: "Insurance End",
+                date: _insuranceEnds,
+                onPicked: (picked) => setState(() => _insuranceEnds = picked),
+              ),
+
+              _sectionTitle("Pollution Details"),
+              _dateField(
+                label: "Pollution Start",
+                date: _pollutionStarts,
+                onPicked: (picked) => setState(() => _pollutionStarts = picked),
+              ),
+              _dateField(
+                label: "Pollution End",
+                date: _pollutionEnds,
+                onPicked: (picked) => setState(() => _pollutionEnds = picked),
+              ),
+
+              _sectionTitle("Other Info"),
+              _inputField(
+                controller: _serviceKmController,
+                hint: "Service KM",
+                icon: Icons.speed,
+              ),
+              _inputField(
+                controller: _batteryController,
+                hint: "Battery (Optional)",
+                icon: Icons.battery_charging_full,
+              ),
+              _inputField(
+                controller: _alignmentController,
+                hint: "Alignment (Optional)",
+                icon: Icons.tune,
+              ),
+              _inputField(
+                controller: _notesController,
+                hint: "Notes (Optional)",
+                icon: Icons.note,
+              ),
+
+              const SizedBox(height: 12),
+              SwitchListTile(
+                title: const Text("Need Notifications"),
+                subtitle: const Text("Enable reminders for services & insurance"),
+                value: _needNotification,
+                onChanged: (val) => setState(() => _needNotification = val),
+              ),
+              SwitchListTile(
+                title: const Text("Shared With Others"),
+                subtitle: const Text("Allow other users to view this vehicle"),
+                value: _sharedWith,
+                onChanged: (val) => setState(() => _sharedWith = val),
+              ),
+
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 24),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: Colors.blueAccent,
+                      ),
+                      onPressed: _saveVehicle,
+                      icon: const Icon(Icons.save, color: Colors.white),
+                      label: Text(
+                        widget.vehicle != null
+                            ? "Update Vehicle"
+                            : "Save Vehicle",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-              ],
-            ),
+                    ),
+            ],
           ),
         ),
       ),
