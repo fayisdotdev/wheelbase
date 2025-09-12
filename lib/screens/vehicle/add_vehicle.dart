@@ -204,7 +204,38 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   }
 
   Future<void> _deleteVehicle() async {
-    if (widget.vehicle == null) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text("Delete Vehicle"),
+          content: const Text(
+            "Are you sure you want to delete this vehicle? This action cannot be undone.",
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text("Delete"),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return; // user cancelled ❌
 
     try {
       await Supabase.instance.client
@@ -213,15 +244,15 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
           .eq('vehicle_id', widget.vehicle!.vehicleId);
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('🗑 Vehicle deleted')));
-        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("🗑 Vehicle deleted successfully")),
+        );
+        Navigator.pop(context, true); // go back after delete ✅
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error deleting vehicle: $e')));
+      ).showSnackBar(SnackBar(content: Text("Error deleting vehicle: $e")));
     }
   }
 
