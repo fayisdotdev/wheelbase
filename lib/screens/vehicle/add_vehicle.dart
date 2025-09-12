@@ -345,11 +345,41 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
                             fit: BoxFit.cover,
                           )
                         : _existingImageUrl != null
-                        ? Image.network(
-                            _existingImageUrl!,
-                            height: 80,
-                            width: 80,
-                            fit: BoxFit.cover,
+                        ? FutureBuilder<String?>(
+                            future: context
+                                .read<VehicleProvider>()
+                                .getSignedImageUrl(
+                                  _existingImageUrl!.replaceFirst(
+                                    RegExp(r'^.*vehicle-images2/'),
+                                    '',
+                                  ),
+                                ),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const SizedBox(
+                                  height: 80,
+                                  width: 80,
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+                              if (snapshot.hasError || snapshot.data == null) {
+                                return Container(
+                                  height: 80,
+                                  width: 80,
+                                  color: Colors.grey.shade300,
+                                  child: const Icon(Icons.broken_image),
+                                );
+                              }
+                              return Image.network(
+                                snapshot.data!,
+                                height: 80,
+                                width: 80,
+                                fit: BoxFit.cover,
+                              );
+                            },
                           )
                         : Container(
                             height: 80,
@@ -357,6 +387,7 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
                             color: Colors.grey.shade300,
                             child: const Icon(Icons.directions_car),
                           ),
+
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
                       onPressed: _pickImage,

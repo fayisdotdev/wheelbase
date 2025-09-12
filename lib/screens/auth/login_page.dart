@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:wheelbase/provider/auth_provider.dart';
 import 'package:wheelbase/screens/auth/signup_page.dart';
 import 'package:wheelbase/screens/home/home_screen.dart';
+import 'package:wheelbase/themes/app/buttons.dart';
+import 'package:wheelbase/themes/app/inputs.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -67,46 +69,52 @@ class _LoginScreenState extends State<LoginScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
+              AppInputForm(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: "Email"),
                 validator: (val) => val == null || !val.contains("@")
                     ? "Enter a valid email"
                     : null,
+                hint: 'Email',
               ),
-              TextFormField(
+              SizedBox(height: 20),
+              AppInputForm(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
                 validator: (val) =>
                     val == null || val.length < 6 ? "Password too short" : null,
+                hint: 'Password',
+                isPassword: true,
               ),
               const SizedBox(height: 20),
               if (_errorMessage != null)
                 Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _loading ? null : _handleLogin,
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Login"),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Don't have an account?"),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SignupScreen()),
-                      );
-                    },
-                    child: const Text("Sign Up"),
-                  ),
-                ],
-              ),
+if (_errorMessage != null)
+  Text(
+    _errorMessage!,
+    style: const TextStyle(color: Colors.red),
+  ),
+const SizedBox(height: 20),
+AppButton(
+  onPressed: _loading ? null : () => _handleLogin(),
+  label: 'Login',
+),
+const SizedBox(height: 20),
+Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    const Text("Don't have an account?"),
+    TextButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SignupScreen()),
+        );
+      },
+      child: const Text("Sign Up"),
+    ),
+  ],
+),
+
             ],
           ),
         ),

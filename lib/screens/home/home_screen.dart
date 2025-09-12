@@ -4,7 +4,8 @@ import 'package:wheelbase/provider/auth_provider.dart';
 import 'package:wheelbase/screens/profile/profile_page.dart';
 import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
 import 'package:wheelbase/screens/vehicle/fetch_details.dart';
-// import 'package:wheelbase/screens/vehicle/test_upload.dart';
+import 'package:wheelbase/themes/app/appbar.dart';
+import 'package:wheelbase/themes/app/apploaders.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -14,74 +15,54 @@ class HomePage extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
 
     if (authProvider.profile == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: AppLoader());
     }
 
     final user = authProvider.profile!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Home"),
+      appBar: AppAppBar(
+        titleText: "WheelBase Home",
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              authProvider.logout(context); // ✅ pass the context
+              authProvider.logout(context);
             },
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
               "Hi, ${user.name} 👋",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfilePage()),
-                );
-              },
-              child: const Text("View Profile"),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => AddVehiclePage()),
-                );
-              },
-              child: const Text("Add New"),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => VehicleListPage()),
-                );
-              },
-              child: const Text("View Vehicles"),
-            ),
-            // const SizedBox(height: 16),
-            // ElevatedButton(
-            //   onPressed: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(builder: (_) => TestUploadPage()),
-            //     );
-            //   },
-            //   child: const Text("test upload"),
-            // ),
-
-          ],
-        ),
+          ),
+          // Use Expanded so the VehicleListPage scrolls properly inside Column
+          const Expanded(child: VehicleListPage()),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddVehiclePage()),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
