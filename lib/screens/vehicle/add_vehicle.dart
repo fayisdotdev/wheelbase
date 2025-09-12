@@ -8,11 +8,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wheelbase/models/vehicles_model.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class AddVehiclePage extends StatefulWidget {
   final VehicleModel? vehicle;
+  final bool isEditing; // NEW flag: controls initial state
 
-  const AddVehiclePage({super.key, this.vehicle});
+  const AddVehiclePage({super.key, this.vehicle, this.isEditing = true});
 
   @override
   State<AddVehiclePage> createState() => _AddVehiclePageState();
@@ -43,10 +46,12 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   String? _existingImageUrl;
 
   bool _isLoading = false;
+  late bool _isEditing; // current editing state
 
   @override
   void initState() {
     super.initState();
+    _isEditing = widget.isEditing;
     if (widget.vehicle != null) {
       _loadVehicleData(widget.vehicle!);
     }
@@ -71,6 +76,7 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   }
 
   Future<void> _pickImage() async {
+    if (!_isEditing) return; // disable in view mode
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() {
@@ -81,6 +87,7 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   }
 
   Future<void> _pickDate(Function(DateTime) onPicked) async {
+    if (!_isEditing) return; // disable in view mode
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -196,18 +203,59 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
     }
   }
 
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+  Future<void> _deleteVehicle() async {
+    if (widget.vehicle == null) return;
+
+    try {
+      await Supabase.instance.client
+          .from('vehicles')
+          .delete()
+          .eq('vehicle_id', widget.vehicle!.vehicleId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('🗑 Vehicle deleted')));
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting vehicle: $e')));
+    }
   }
+
+  Future<void> _shareVehicle() async {
+    if (widget.vehicle == null) return;
+    final v = widget.vehicle!;
+    final details =
+        '''
+Vehicle: ${v.vehicleName} (${v.vehicleYear})
+Owner: ${v.ownerName}
+Number: ${v.vehicleNumber}
+Service KM: ${v.serviceKm}
+Battery: ${v.battery ?? 'N/A'}
+Alignment: ${v.alignment ?? 'N/A'}
+Insurance: ${_formatDate(v.insuranceStarts)} → ${_formatDate(v.insuranceEnds)}
+Pollution: ${_formatDate(v.pollutionStarts)} → ${_formatDate(v.pollutionEnds)}
+Notes: ${v.notes ?? 'N/A'}
+Shared: ${v.sharedWith ? "Yes" : "No"}
+Notification: ${v.needNotification ? "On" : "Off"}
+''';
+    await Share.share(details, subject: 'Vehicle Details');
+  }
+
+  String _formatDate(DateTime? dt) =>
+      dt != null ? "${dt.toLocal().toString().split(' ')[0]}" : "N/A";
+
+  // UI Helpers
+  Widget _sectionTitle(String title) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Text(
+      title,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    ),
+  );
 
   Widget _inputField({
     required TextEditingController controller,
@@ -221,12 +269,16 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: TextFormField(
         controller: controller,
+        enabled: _isEditing,
         validator: validator,
         decoration: InputDecoration(
           prefixIcon: icon != null ? Icon(icon) : null,
           hintText: hint,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -246,19 +298,56 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
         leading: Icon(icon, color: Colors.blueAccent),
         title: Text(label),
         subtitle: Text(
-          date != null
-              ? "${date.toLocal().toString().split(' ')[0]}"
-              : "Not selected",
-          style: TextStyle(
-            color: date != null ? Colors.black : Colors.grey,
-          ),
+          date != null ? _formatDate(date) : "Not selected",
+          style: TextStyle(color: date != null ? Colors.black : Colors.grey),
         ),
-        trailing: const Icon(Icons.edit_calendar),
+        trailing: _isEditing ? const Icon(Icons.edit_calendar) : null,
         onTap: () async {
           await _pickDate(onPicked);
         },
       ),
     );
+  }
+
+  Widget _buildFABs() {
+    if (_isEditing) {
+      return FloatingActionButton.extended(
+        backgroundColor: Colors.green,
+        icon: const Icon(Icons.check),
+        label: const Text("Save"),
+        onPressed: _saveVehicle,
+      );
+    } else {
+      return SpeedDial(
+        icon: Icons.more_vert,
+        activeIcon: Icons.close,
+        backgroundColor: Colors.blueAccent,
+        overlayColor: Colors.black,
+        overlayOpacity: 0.4,
+        spacing: 12,
+        spaceBetweenChildren: 8,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.edit, color: Colors.white),
+            label: "Edit",
+            backgroundColor: Colors.blue,
+            onTap: () => setState(() => _isEditing = true),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.delete, color: Colors.white),
+            label: "Delete",
+            backgroundColor: Colors.red,
+            onTap: _deleteVehicle,
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.share, color: Colors.white),
+            label: "Share",
+            backgroundColor: Colors.orange,
+            onTap: _shareVehicle,
+          ),
+        ],
+      );
+    }
   }
 
   @override
@@ -280,9 +369,14 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         elevation: 0,
-        title: Text(widget.vehicle != null ? "Edit Vehicle" : "Add Vehicle"),
+        title: Text(
+          widget.vehicle != null
+              ? (_isEditing ? "Edit Vehicle" : "Vehicle Details")
+              : "Add Vehicle",
+        ),
         centerTitle: true,
       ),
+      floatingActionButton: widget.vehicle != null ? _buildFABs() : null,
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -304,61 +398,63 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
                               fit: BoxFit.cover,
                             )
                           : _existingImageUrl != null
-                              ? FutureBuilder<String?>(
-                                  future: context
-                                      .read<VehicleProvider>()
-                                      .getSignedImageUrl(
-                                        _existingImageUrl!.replaceFirst(
-                                          RegExp(r'^.*vehicle-images2/'),
-                                          '',
-                                        ),
-                                      ),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return const SizedBox(
-                                        height: 150,
-                                        width: 150,
-                                        child: Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      );
-                                    }
-                                    if (snapshot.hasError ||
-                                        snapshot.data == null) {
-                                      return Container(
-                                        height: 150,
-                                        width: 150,
-                                        color: Colors.grey.shade300,
-                                        child: const Icon(Icons.broken_image,
-                                            size: 40),
-                                      );
-                                    }
-                                    return Image.network(
-                                      snapshot.data!,
-                                      height: 150,
-                                      width: 150,
-                                      fit: BoxFit.cover,
-                                    );
-                                  },
-                                )
-                              : Container(
+                          ? FutureBuilder<String?>(
+                              future: context
+                                  .read<VehicleProvider>()
+                                  .getSignedImageUrl(
+                                    _existingImageUrl!.replaceFirst(
+                                      RegExp(r'^.*vehicle-images2/'),
+                                      '',
+                                    ),
+                                  ),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const SizedBox(
+                                    height: 150,
+                                    width: 150,
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                }
+                                if (snapshot.hasError ||
+                                    snapshot.data == null) {
+                                  return Container(
+                                    height: 150,
+                                    width: 150,
+                                    color: Colors.grey.shade300,
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 40,
+                                    ),
+                                  );
+                                }
+                                return Image.network(
+                                  snapshot.data!,
                                   height: 150,
                                   width: 150,
-                                  color: Colors.grey.shade300,
-                                  child: const Icon(Icons.directions_car,
-                                      size: 50),
-                                ),
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            )
+                          : Container(
+                              height: 150,
+                              width: 150,
+                              color: Colors.grey.shade300,
+                              child: const Icon(Icons.directions_car, size: 50),
+                            ),
                     ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: FloatingActionButton.small(
-                        heroTag: "pickImage",
-                        onPressed: _pickImage,
-                        child: const Icon(Icons.camera_alt),
+                    if (_isEditing)
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: FloatingActionButton.small(
+                          heroTag: "pickImage",
+                          onPressed: _pickImage,
+                          child: const Icon(Icons.camera_alt),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -442,41 +538,25 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
               const SizedBox(height: 12),
               SwitchListTile(
                 title: const Text("Need Notifications"),
-                subtitle: const Text("Enable reminders for services & insurance"),
+                subtitle: const Text(
+                  "Enable reminders for services & insurance",
+                ),
                 value: _needNotification,
-                onChanged: (val) => setState(() => _needNotification = val),
+                onChanged: _isEditing
+                    ? (val) => setState(() => _needNotification = val)
+                    : null,
               ),
               SwitchListTile(
                 title: const Text("Shared With Others"),
                 subtitle: const Text("Allow other users to view this vehicle"),
                 value: _sharedWith,
-                onChanged: (val) => setState(() => _sharedWith = val),
+                onChanged: _isEditing
+                    ? (val) => setState(() => _sharedWith = val)
+                    : null,
               ),
 
               const SizedBox(height: 20),
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 24),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        backgroundColor: Colors.blueAccent,
-                      ),
-                      onPressed: _saveVehicle,
-                      icon: const Icon(Icons.save, color: Colors.white),
-                      label: Text(
-                        widget.vehicle != null
-                            ? "Update Vehicle"
-                            : "Save Vehicle",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+              if (_isLoading) const Center(child: CircularProgressIndicator()),
             ],
           ),
         ),

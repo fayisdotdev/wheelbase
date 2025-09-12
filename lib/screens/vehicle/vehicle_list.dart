@@ -76,13 +76,14 @@ class _VehicleListPageState extends State<VehicleListPage> {
                 final v = vehicles[index];
 
                 return GestureDetector(
+                  // user clicked the whole card
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => VehicleDetailPagerScreen(
-                          vehicles: vehicles,
-                          initialIndex: index,
+                        builder: (_) => AddVehiclePage(
+                          vehicle: v,
+                          isEditing: false, // 👈 start in read-only mode
                         ),
                       ),
                     );
@@ -191,12 +192,16 @@ class _VehicleListPageState extends State<VehicleListPage> {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: ElevatedButton.icon(
+                                  // pressed edit
                                   onPressed: () async {
                                     final result = await Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) =>
-                                            AddVehiclePage(vehicle: v),
+                                        builder: (_) => AddVehiclePage(
+                                          vehicle: v,
+                                          isEditing:
+                                              true, // 👈 start directly in edit mode
+                                        ),
                                       ),
                                     );
 
