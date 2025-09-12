@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wheelbase/provider/auth_provider.dart';
+import 'package:wheelbase/screens/auth/login_page.dart';
+import 'package:wheelbase/screens/home/home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -39,10 +41,18 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (error == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Signup successful!")),
+
+      // Show success toast/snackbar
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Signup successful!")));
+
+      // Navigate to HomePage and remove all previous routes
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+        (route) => false,
       );
-      Navigator.pop(context); // go back or to login
     } else {
       setState(() {
         _errorMessage = error;
@@ -77,8 +87,9 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: "Email"),
-                validator: (val) =>
-                    val == null || !val.contains("@") ? "Enter a valid email" : null,
+                validator: (val) => val == null || !val.contains("@")
+                    ? "Enter a valid email"
+                    : null,
               ),
               TextFormField(
                 controller: _passwordController,
@@ -89,16 +100,29 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 20),
               if (_errorMessage != null)
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
+                Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _loading ? null : _handleSignup,
                 child: _loading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("Sign Up"),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Already have an account?"),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                    child: const Text("Login"),
+                  ),
+                ],
               ),
             ],
           ),

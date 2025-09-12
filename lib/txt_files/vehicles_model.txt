@@ -1,0 +1,85 @@
+// class VehicleModel {
+//   final int? id;
+//   final DateTime? createdAt;
+//   final String ownerName;
+//   final String vehicleName;
+//   final String vehicleNumber;
+//   final String vehicleYear;
+//   final DateTime insuranceStarts;
+//   final DateTime insuranceEnds;
+//   final DateTime pollutionStarts;
+//   final DateTime pollutionEnds;
+//   final String? battery;
+//   final String? alignment;
+//   final String serviceKm;
+//   final String? notes;
+//   final bool needNotification;
+//   final bool sharedWith;
+//   final String vehicleId;
+//   final String vehicle_added_by;
+
+//   VehicleModel({
+//     this.id,
+//     this.createdAt,
+//     required this.ownerName,
+//     required this.vehicleName,
+//     required this.vehicleNumber,
+//     required this.vehicleYear,
+//     required this.insuranceStarts,
+//     required this.insuranceEnds,
+//     required this.pollutionStarts,
+//     required this.pollutionEnds,
+//     this.battery,
+//     this.alignment,
+//     required this.serviceKm,
+//     this.notes,
+//     this.needNotification = false,
+//     this.sharedWith = false,
+//     required this.vehicleId,
+//     required this.vehicle_added_by,
+//   });
+
+//   Map<String, dynamic> toJson() {
+//     return {
+//       "vehicle_owner_name": ownerName,
+//       "vehicle_name": vehicleName,
+//       "vehicle_number": vehicleNumber,
+//       "vehicle_year": vehicleYear,
+//       "vehicle_insurance_starts": insuranceStarts.toIso8601String(),
+//       "vehicle_insurance_ends": insuranceEnds.toIso8601String(),
+//       "vehicle_pollution_starts": pollutionStarts.toIso8601String(),
+//       "vehicle_pollution_ends": pollutionEnds.toIso8601String(),
+//       "vehicle_battery": battery,
+//       "vehicle_alignment": alignment,
+//       "vehicle_service": serviceKm,
+//       "vehicle_notes": notes,
+//       "need_notification": needNotification,
+//       "shared_with": sharedWith,
+//       "vehicle_id": vehicleId,
+//       "vehicle_added_by": vehicle_added_by,
+//     };
+//   }
+
+//   factory VehicleModel.fromJson(Map<String, dynamic> json) {
+//     return VehicleModel(
+//       id: json["id"],
+//       createdAt: json["created_at"] != null ? DateTime.parse(json["created_at"]) : null,
+//       ownerName: json["vehicle_owner_name"],
+//       vehicleName: json["vehicle_name"],
+//       vehicleNumber: json["vehicle_number"],
+//       vehicleYear: json["vehicle_year"],
+//       insuranceStarts: DateTime.parse(json["vehicle_insurance_starts"]),
+//       insuranceEnds: DateTime.parse(json["vehicle_insurance_ends"]),
+//       pollutionStarts: DateTime.parse(json["vehicle_pollution_starts"]),
+//       pollutionEnds: DateTime.parse(json["vehicle_pollution_ends"]),
+//       battery: json["vehicle_battery"],
+//       alignment: json["vehicle_alignment"],
+//       serviceKm: json["vehicle_service"],
+//       notes: json["vehicle_notes"],
+//       needNotification: json["need_notification"] ?? false,
+//       sharedWith: json["shared_with"] ?? false,
+//       vehicleId: json["vehicle_id"],
+//       vehicle_added_by: json["vehicle_added_by"],
+//     );
+//   }
+// }

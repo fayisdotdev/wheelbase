@@ -1,0 +1,30 @@
+-- enable
+alter table public.users enable row level security;
+
+-- signup 
+create policy "Allow insert own row"
+on public.users
+for insert
+to authenticated
+with check (auth.uid() = uuid);
+
+-- view profile
+create policy "Allow select own row"
+on public.users
+for select
+to authenticated
+using (auth.uid() = uuid);
+
+-- edit profile
+create policy "Allow update own row"
+on public.users
+for update
+to authenticated
+using (auth.uid() = uuid);
+
+-- extra for signup
+create policy "Allow users to insert their own profile"
+on public.users
+for insert
+with check (auth.uid() = uuid);
+

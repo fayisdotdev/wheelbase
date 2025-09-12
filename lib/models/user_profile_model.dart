@@ -1,59 +1,32 @@
+// // models/user_profile_model.dart
 class UserProfileModel {
-  final String authUuid;
-  final String uuid;
+  final int id;
   final String email;
   final String name;
   final String phone;
-  final String password;
+  final String authUuid;
+  final String uuid;
   final DateTime createdAt;
 
   UserProfileModel({
-    required this.authUuid,
-    required this.uuid,
+    required this.id,
     required this.email,
     required this.name,
     required this.phone,
-    required this.password,
+    required this.authUuid,
+    required this.uuid,
     required this.createdAt,
   });
 
-  factory UserProfileModel.fromMap(Map<String, dynamic> map) {
+  factory UserProfileModel.fromJson(Map<String, dynamic> json) {
     return UserProfileModel(
-      authUuid: map['auth_uuid'] ?? '',
-      uuid: map['uuid'] ?? '',
-      email: map['email'] ?? '',
-      name: map['name'] ?? '',
-      phone: map['phone'] ?? '',
-      password: map['password'] ?? '',
-      createdAt: DateTime.parse(map['created_at']),
+      id: json['id'] as int,
+      email: json['email'] as String,
+      name: json['name'] as String,
+      phone: json['phone'] as String,
+      authUuid: json['auth_uuid'] as String,
+      uuid: json['uuid'] as String,
+      createdAt: DateTime.parse(json['created_at']),
     );
-  }
-
-  UserProfileModel copyWith({
-    String? name,
-    String? phone,
-    String? password,
-  }) {
-    return UserProfileModel(
-      authUuid: authUuid,
-      uuid: uuid,
-      email: email,
-      name: name ?? this.name,
-      phone: phone ?? this.phone,
-      password: password ?? this.password,
-      createdAt: createdAt,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'auth_uuid': authUuid,
-      'uuid': uuid,
-      'email': email,
-      'name': name,
-      'phone': phone,
-      'password': password,
-      'created_at': createdAt.toIso8601String(),
-    };
   }
 }

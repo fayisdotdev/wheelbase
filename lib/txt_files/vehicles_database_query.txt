@@ -1,0 +1,109 @@
+-- updated with test - ok
+-- create table public.vehicles (
+--   id uuid default uuid_generate_v4() primary key,
+
+--   -- Relation
+--   user_auth_uuid uuid not null references public.users(auth_uuid) on delete cascade,
+
+--   -- Basic vehicle info
+--   owner_name text not null,
+--   vehicle_name text not null,
+--   vehicle_number text not null,
+--   vehicle_year text not null,
+
+--   -- Documents validity
+--   insurance_starts date not null,
+--   insurance_ends date not null,
+--   pollution_starts date not null,
+--   pollution_ends date not null,
+
+--   -- Maintenance
+--   battery text,
+--   alignment text,
+--   service_km text not null,
+--   notes text,
+
+--   -- Options
+--   need_notification boolean default false,
+--   shared_with boolean default false,
+
+--   -- Metadata
+--   vehicle_id text not null unique,  -- your unique string (custom, like VIN/UUID)
+--   vehicle_added_by text not null,   -- store uploader’s name/email/etc.
+--   image_url text,
+
+--   uploaded_at timestamptz default now()
+-- );
+
+
+alter table public.vehicles
+add column created_at timestamp with time zone not null default now();
+
+
+-- edit vehicles
+-- -- alter table public.vehicles enable row level security;
+
+-- -- Allow insert only if user_auth_uuid matches the logged-in user
+-- create policy "Users can insert their own vehicles"
+-- on public.vehicles for insert
+-- with check (auth.uid() = user_auth_uuid);
+
+-- -- Allow select only their own vehicles
+-- create policy "Users can view their own vehicles"
+-- on public.vehicles for select
+-- using (auth.uid() = user_auth_uuid);
+
+-- Allow update only if the user owns the vehicle
+create policy "Users can update their own vehicles"
+on public.vehicles
+for update
+using (auth.uid() = user_auth_uuid)
+with check (auth.uid() = user_auth_uuid);
+
+-- Delete: Users can delete only their own vehicles
+CREATE POLICY "Users can delete their own vehicles"
+ON public.vehicles
+FOR DELETE
+USING (auth.uid() = user_auth_uuid);
+
+
+-- vehicle image upload to bucket 
+-- -- Allow authenticated users to upload to their own folder inside test-images
+-- create policy "Users can upload to their folder vehicle images"
+-- on storage.objects
+-- for insert
+-- to authenticated
+-- with check (
+--   bucket_id = 'vehicle-images'
+--   and (storage.foldername(name))[1] = auth.uid()::text
+-- );
+
+-- -- Allow authenticated users to read their own files
+-- create policy "Users can read their own files vehicle images"
+-- on storage.objects
+-- for select
+-- to authenticated
+-- using (
+--   bucket_id = 'vehicle-images'
+--   and (storage.foldername(name))[1] = auth.uid()::text
+-- );
+
+-- -- Allow authenticated users to delete their own files
+-- create policy "Users can delete their own files vehicle images"
+-- on storage.objects
+-- for delete
+-- to authenticated
+-- using (
+--   bucket_id = 'vehicle-images'
+--   and (storage.foldername(name))[1] = auth.uid()::text
+-- );
+
+-- Allow authenticated users to update their own files
+create policy "Users can update their own files vehicle images"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'vehicle-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);

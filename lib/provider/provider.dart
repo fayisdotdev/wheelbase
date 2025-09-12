@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wheelbase/my_app.dart';
 import 'package:wheelbase/provider/auth_provider.dart';
 import 'package:wheelbase/provider/splash_provider.dart';
+import 'package:wheelbase/provider/vehicle_provider.dart';
 
 /// Example App-wide state
 class AppState extends ChangeNotifier {
@@ -19,6 +20,7 @@ class ProviderWrapper extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppState()),
         ChangeNotifierProvider(create: (_) => SplashProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => VehicleProvider()),
       ],
       child: const MyApp(),  // ⬅️ MyApp is child now
     );

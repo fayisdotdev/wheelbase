@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:wheelbase/screens/home/splash_screen.dart';
+import 'package:wheelbase/themes/appcolors.dart';
+import 'package:wheelbase/themes/appfonts.dart';
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -9,11 +13,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Wheelbase',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+        ),
+        textTheme: AppFonts.textTheme,
       ),
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),  // ⬅️ this stays here
+      home: const SplashScreen(),
     );
   }
 }
