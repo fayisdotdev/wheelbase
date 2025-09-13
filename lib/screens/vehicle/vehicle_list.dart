@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wheelbase/models/vehicles_model.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
 import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
-import 'package:wheelbase/screens/vehicle/detailed_page.dart'; // Import the detailed page
+// import 'package:wheelbase/screens/vehicle/detailed_page.dart'; // Import the detailed page
 
 class VehicleListPage extends StatefulWidget {
   const VehicleListPage({super.key});

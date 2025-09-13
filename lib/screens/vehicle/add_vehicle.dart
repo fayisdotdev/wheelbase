@@ -13,7 +13,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class AddVehiclePage extends StatefulWidget {
   final VehicleModel? vehicle;
-  final bool isEditing; // NEW flag: controls initial state
+  final bool isEditing;
 
   const AddVehiclePage({super.key, this.vehicle, this.isEditing = true});
 
@@ -24,6 +24,7 @@ class AddVehiclePage extends StatefulWidget {
 class _AddVehiclePageState extends State<AddVehiclePage> {
   final _formKey = GlobalKey<FormState>();
 
+  // Controllers for text input fields
   final _ownerController = TextEditingController();
   final _vehicleNameController = TextEditingController();
   final _vehicleNumberController = TextEditingController();
@@ -33,20 +34,24 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   final _alignmentController = TextEditingController();
   final _notesController = TextEditingController();
 
+  // Date fields
   DateTime? _insuranceStarts;
   DateTime? _insuranceEnds;
   DateTime? _pollutionStarts;
   DateTime? _pollutionEnds;
 
+  // Switch toggles
   bool _needNotification = false;
   bool _sharedWith = false;
 
+  // Image handling
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
   String? _existingImageUrl;
 
+  // State flags
   bool _isLoading = false;
-  late bool _isEditing; // current editing state
+  late bool _isEditing;
 
   @override
   void initState() {
@@ -76,26 +81,29 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   }
 
   Future<void> _pickImage() async {
-    if (!_isEditing) return; // disable in view mode
+    if (!_isEditing) return;
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() {
         _imageFile = File(picked.path);
-        _existingImageUrl = null;
+        _existingImageUrl = null; // clear old image
       });
     }
   }
 
   Future<void> _pickDate(Function(DateTime) onPicked) async {
-    if (!_isEditing) return; // disable in view mode
+    if (!_isEditing) return;
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      firstDate: DateTime(now.year - 10),
-      lastDate: DateTime(now.year + 10),
+      firstDate: DateTime(now.year - 15),
+      lastDate: DateTime(now.year + 15),
       initialDate: now,
     );
-    if (picked != null) onPicked(picked);
+    if (picked != null) {
+      onPicked(picked);
+      setState(() {});
+    }
   }
 
   Future<void> _saveVehicle() async {
@@ -106,7 +114,7 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
         _pollutionStarts == null ||
         _pollutionEnds == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select all date fields")),
+        const SnackBar(content: Text("Please complete all date fields")),
       );
       return;
     }
@@ -119,22 +127,23 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("User not logged in")));
-        setState(() => _isLoading = false);
         return;
       }
 
       final vehicleProvider = context.read<VehicleProvider>();
       String? imageUrl = _existingImageUrl;
 
+      // Upload new image if selected
       if (_imageFile != null) {
         imageUrl = await vehicleProvider.uploadImage(_imageFile!);
         if (imageUrl == null) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text("Image upload failed!")));
+          ).showSnackBar(const SnackBar(content: Text("Image upload failed")));
         }
       }
 
+      // Create vehicle object
       final vehicle = VehicleModel(
         vehicleId: widget.vehicle?.vehicleId ?? const Uuid().v4(),
         ownerName: _ownerController.text.trim(),
@@ -165,12 +174,9 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
         imageUrl: imageUrl,
       );
 
-      bool success;
-      if (widget.vehicle != null) {
-        success = await vehicleProvider.updateVehicle(vehicle);
-      } else {
-        success = await vehicleProvider.addVehicle(vehicle);
-      }
+      final success = widget.vehicle != null
+          ? await vehicleProvider.updateVehicle(vehicle)
+          : await vehicleProvider.addVehicle(vehicle);
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -206,36 +212,31 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
   Future<void> _deleteVehicle() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) {
+      builder: (ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           title: const Text("Delete Vehicle"),
           content: const Text(
-            "Are you sure you want to delete this vehicle? This action cannot be undone.",
+            "This action cannot be undone. Are you sure you want to delete?",
           ),
           actions: [
             TextButton(
               child: const Text("Cancel"),
-              onPressed: () => Navigator.of(context).pop(false),
+              onPressed: () => Navigator.of(ctx).pop(false),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text("Delete"),
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () => Navigator.of(ctx).pop(true),
             ),
           ],
         );
       },
     );
 
-    if (confirm != true) return; // user cancelled ❌
+    if (confirm != true) return;
 
     try {
       await Supabase.instance.client
@@ -245,9 +246,9 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("🗑 Vehicle deleted successfully")),
+          const SnackBar(content: Text("Vehicle deleted successfully")),
         );
-        Navigator.pop(context, true); // go back after delete ✅
+        Navigator.pop(context, true);
       }
     } catch (e) {
       ScaffoldMessenger.of(
@@ -261,25 +262,29 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
     final v = widget.vehicle!;
     final details =
         '''
-Vehicle: ${v.vehicleName} (${v.vehicleYear})
+🚗 Vehicle Details
+------------------------
+Name: ${v.vehicleName} (${v.vehicleYear})
 Owner: ${v.ownerName}
 Number: ${v.vehicleNumber}
 Service KM: ${v.serviceKm}
 Battery: ${v.battery ?? 'N/A'}
 Alignment: ${v.alignment ?? 'N/A'}
+
 Insurance: ${_formatDate(v.insuranceStarts)} → ${_formatDate(v.insuranceEnds)}
 Pollution: ${_formatDate(v.pollutionStarts)} → ${_formatDate(v.pollutionEnds)}
+
 Notes: ${v.notes ?? 'N/A'}
 Shared: ${v.sharedWith ? "Yes" : "No"}
-Notification: ${v.needNotification ? "On" : "Off"}
+Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
 ''';
-    await Share.share(details, subject: 'Vehicle Details');
+    await Share.share(details, subject: 'Vehicle Info');
   }
 
   String _formatDate(DateTime? dt) =>
-      dt != null ? "${dt.toLocal().toString().split(' ')[0]}" : "N/A";
+      dt != null ? dt.toLocal().toString().split(' ')[0] : "N/A";
 
-  // UI Helpers
+  // --- UI Widgets ---
   Widget _sectionTitle(String title) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 12),
     child: Text(
@@ -333,15 +338,13 @@ Notification: ${v.needNotification ? "On" : "Off"}
           style: TextStyle(color: date != null ? Colors.black : Colors.grey),
         ),
         trailing: _isEditing ? const Icon(Icons.edit_calendar) : null,
-        onTap: () async {
-          await _pickDate(onPicked);
-        },
+        onTap: () async => await _pickDate(onPicked),
       ),
     );
   }
 
   Widget _buildFABs() {
-    if (_isEditing) {
+    if (_isEditing || widget.vehicle == null) {
       return FloatingActionButton.extended(
         backgroundColor: Colors.green,
         icon: const Icon(Icons.check),
@@ -353,8 +356,8 @@ Notification: ${v.needNotification ? "On" : "Off"}
         icon: Icons.more_vert,
         activeIcon: Icons.close,
         backgroundColor: Colors.blueAccent,
-        overlayColor: Colors.black,
-        overlayOpacity: 0.4,
+        overlayColor: Colors.black54,
+        overlayOpacity: 0.5,
         spacing: 12,
         spaceBetweenChildren: 8,
         children: [
@@ -373,8 +376,22 @@ Notification: ${v.needNotification ? "On" : "Off"}
           SpeedDialChild(
             child: const Icon(Icons.share, color: Colors.white),
             label: "Share",
-            backgroundColor: Colors.orange,
+            backgroundColor: Colors.green,
             onTap: _shareVehicle,
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.add, color: Colors.black),
+            label: "Add new",
+            backgroundColor: Colors.white,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const AddVehiclePage(vehicle: null, isEditing: true),
+                ),
+              );
+            },
           ),
         ],
       );
@@ -407,7 +424,7 @@ Notification: ${v.needNotification ? "On" : "Off"}
         ),
         centerTitle: true,
       ),
-      floatingActionButton: widget.vehicle != null ? _buildFABs() : null,
+      floatingActionButton: _buildFABs(),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -415,7 +432,7 @@ Notification: ${v.needNotification ? "On" : "Off"}
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Vehicle Image
+              // Vehicle Image section
               Center(
                 child: Stack(
                   children: [
@@ -438,7 +455,7 @@ Notification: ${v.needNotification ? "On" : "Off"}
                                       '',
                                     ),
                                   ),
-                              builder: (context, snapshot) {
+                              builder: (ctx, snapshot) {
                                 if (snapshot.connectionState ==
                                     ConnectionState.waiting) {
                                   return const SizedBox(
@@ -490,6 +507,7 @@ Notification: ${v.needNotification ? "On" : "Off"}
                 ),
               ),
 
+              // Input sections
               _sectionTitle("Basic Information"),
               _inputField(
                 controller: _ownerController,
@@ -524,24 +542,24 @@ Notification: ${v.needNotification ? "On" : "Off"}
               _dateField(
                 label: "Insurance Start",
                 date: _insuranceStarts,
-                onPicked: (picked) => setState(() => _insuranceStarts = picked),
+                onPicked: (picked) => _insuranceStarts = picked,
               ),
               _dateField(
                 label: "Insurance End",
                 date: _insuranceEnds,
-                onPicked: (picked) => setState(() => _insuranceEnds = picked),
+                onPicked: (picked) => _insuranceEnds = picked,
               ),
 
               _sectionTitle("Pollution Details"),
               _dateField(
                 label: "Pollution Start",
                 date: _pollutionStarts,
-                onPicked: (picked) => setState(() => _pollutionStarts = picked),
+                onPicked: (picked) => _pollutionStarts = picked,
               ),
               _dateField(
                 label: "Pollution End",
                 date: _pollutionEnds,
-                onPicked: (picked) => setState(() => _pollutionEnds = picked),
+                onPicked: (picked) => _pollutionEnds = picked,
               ),
 
               _sectionTitle("Other Info"),
