@@ -10,6 +10,7 @@ import 'package:wheelbase/models/vehicles_model.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+// import 'package:wheelbase/themes/app/inputs.dart';
 
 class AddVehiclePage extends StatefulWidget {
   final VehicleModel? vehicle;
@@ -511,7 +512,7 @@ Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
               _sectionTitle("Basic Information"),
               _inputField(
                 controller: _ownerController,
-                hint: "Owner Name",
+                hint: 'Owner Name',
                 icon: Icons.person,
                 validator: (val) =>
                     val == null || val.isEmpty ? "Required" : null,

@@ -76,3 +76,59 @@ class AppInputForm extends StatelessWidget {
     );
   }
 }
+
+
+
+
+// import 'package:flutter/material.dart';
+
+class AppInputField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String? hint;
+  final IconData? icon;
+  final bool enabled;
+  final TextInputType keyboardType;
+  final String? Function(String?)? validator;
+  final int maxLines;
+
+  const AppInputField({
+    super.key,
+    required this.controller,
+    required this.label,
+    this.hint,
+    this.icon,
+    this.enabled = true,
+    this.keyboardType = TextInputType.text,
+    this.validator,
+    this.maxLines = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 1,
+          child: TextFormField(
+            controller: controller,
+            enabled: enabled,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            validator: validator,
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: icon != null ? Icon(icon) : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
