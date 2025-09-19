@@ -1,616 +1,159 @@
-// lib/pages/add_vehicle_page.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 import 'package:wheelbase/models/vehicles_model.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-// import 'package:wheelbase/themes/app/inputs.dart';
+
+// Reusable UI
+
+import 'package:wheelbase/themes/app/app_fab.dart';
+import 'package:wheelbase/themes/app/app_snackbar.dart';
+import 'package:wheelbase/themes/vehicle/app_text_field.dart';
+import 'package:wheelbase/themes/vehicle/vehicle_switches.dart';
+import 'package:wheelbase/themes/vehicle/vehicles_form_section.dart';
+import 'package:wheelbase/themes/vehicle/vehicles_image_uploader.dart';
+
+// Vehicle Widgets
 
 class AddVehiclePage extends StatefulWidget {
   final VehicleModel? vehicle;
   final bool isEditing;
 
-  const AddVehiclePage({super.key, this.vehicle, this.isEditing = true});
+  const AddVehiclePage({
+    Key? key,
+    this.vehicle, // optional
+    this.isEditing = false, // defaults to false
+  }) : super(key: key);
 
   @override
   State<AddVehiclePage> createState() => _AddVehiclePageState();
 }
 
 class _AddVehiclePageState extends State<AddVehiclePage> {
-  final _formKey = GlobalKey<FormState>();
+  // Controllers
+  final _ownerCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _numberCtrl = TextEditingController();
+  final _yearCtrl = TextEditingController();
+  final _serviceKmCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
 
-  // Controllers for text input fields
-  final _ownerController = TextEditingController();
-  final _vehicleNameController = TextEditingController();
-  final _vehicleNumberController = TextEditingController();
-  final _vehicleYearController = TextEditingController();
-  final _serviceKmController = TextEditingController();
-  final _batteryController = TextEditingController();
-  final _alignmentController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  // Date fields
-  DateTime? _insuranceStarts;
-  DateTime? _insuranceEnds;
-  DateTime? _pollutionStarts;
-  DateTime? _pollutionEnds;
-
-  // Switch toggles
+  File? _pickedImage;
   bool _needNotification = false;
   bool _sharedWith = false;
-
-  // Image handling
-  final ImagePicker _picker = ImagePicker();
-  File? _imageFile;
-  String? _existingImageUrl;
-
-  // State flags
-  bool _isLoading = false;
-  late bool _isEditing;
 
   @override
   void initState() {
     super.initState();
-    _isEditing = widget.isEditing;
     if (widget.vehicle != null) {
-      _loadVehicleData(widget.vehicle!);
+      _ownerCtrl.text = widget.vehicle!.ownerName;
+      _nameCtrl.text = widget.vehicle!.vehicleName;
+      _numberCtrl.text = widget.vehicle!.vehicleNumber;
+      _yearCtrl.text = widget.vehicle!.vehicleYear;
+      _serviceKmCtrl.text = widget.vehicle!.serviceKm;
+      _notesCtrl.text = widget.vehicle!.notes ?? '';
+      _needNotification = widget.vehicle!.needNotification;
+      _sharedWith = widget.vehicle!.sharedWith;
+      // Image? -> you can fetch signed URL if needed
     }
-  }
-
-  void _loadVehicleData(VehicleModel vehicle) {
-    _ownerController.text = vehicle.ownerName;
-    _vehicleNameController.text = vehicle.vehicleName;
-    _vehicleNumberController.text = vehicle.vehicleNumber;
-    _vehicleYearController.text = vehicle.vehicleYear;
-    _serviceKmController.text = vehicle.serviceKm;
-    _batteryController.text = vehicle.battery ?? '';
-    _alignmentController.text = vehicle.alignment ?? '';
-    _notesController.text = vehicle.notes ?? '';
-    _insuranceStarts = vehicle.insuranceStarts;
-    _insuranceEnds = vehicle.insuranceEnds;
-    _pollutionStarts = vehicle.pollutionStarts;
-    _pollutionEnds = vehicle.pollutionEnds;
-    _needNotification = vehicle.needNotification;
-    _sharedWith = vehicle.sharedWith;
-    _existingImageUrl = vehicle.imageUrl;
-  }
-
-  Future<void> _pickImage() async {
-    if (!_isEditing) return;
-    final picked = await _picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        _imageFile = File(picked.path);
-        _existingImageUrl = null; // clear old image
-      });
-    }
-  }
-
-  Future<void> _pickDate(Function(DateTime) onPicked) async {
-    if (!_isEditing) return;
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      firstDate: DateTime(now.year - 15),
-      lastDate: DateTime(now.year + 15),
-      initialDate: now,
-    );
-    if (picked != null) {
-      onPicked(picked);
-      setState(() {});
-    }
-  }
-
-  Future<void> _saveVehicle() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (_insuranceStarts == null ||
-        _insuranceEnds == null ||
-        _pollutionStarts == null ||
-        _pollutionEnds == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please complete all date fields")),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("User not logged in")));
-        return;
-      }
-
-      final vehicleProvider = context.read<VehicleProvider>();
-      String? imageUrl = _existingImageUrl;
-
-      // Upload new image if selected
-      if (_imageFile != null) {
-        imageUrl = await vehicleProvider.uploadImage(_imageFile!);
-        if (imageUrl == null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text("Image upload failed")));
-        }
-      }
-
-      // Create vehicle object
-      final vehicle = VehicleModel(
-        vehicleId: widget.vehicle?.vehicleId ?? const Uuid().v4(),
-        ownerName: _ownerController.text.trim(),
-        vehicleName: _vehicleNameController.text.trim(),
-        vehicleNumber: _vehicleNumberController.text.trim(),
-        vehicleYear: _vehicleYearController.text.trim(),
-        userAuthUuid: user.id,
-        vehicleAddedBy: widget.vehicle?.vehicleAddedBy ?? user.id,
-        serviceKm: _serviceKmController.text.trim().isEmpty
-            ? "0"
-            : _serviceKmController.text.trim(),
-        createdAt: widget.vehicle?.createdAt ?? DateTime.now(),
-        insuranceStarts: _insuranceStarts,
-        insuranceEnds: _insuranceEnds,
-        pollutionStarts: _pollutionStarts,
-        pollutionEnds: _pollutionEnds,
-        battery: _batteryController.text.trim().isEmpty
-            ? null
-            : _batteryController.text.trim(),
-        alignment: _alignmentController.text.trim().isEmpty
-            ? null
-            : _alignmentController.text.trim(),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-        needNotification: _needNotification,
-        sharedWith: _sharedWith,
-        imageUrl: imageUrl,
-      );
-
-      final success = widget.vehicle != null
-          ? await vehicleProvider.updateVehicle(vehicle)
-          : await vehicleProvider.addVehicle(vehicle);
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.vehicle != null
-                  ? "Vehicle updated successfully!"
-                  : "Vehicle added successfully!",
-            ),
-          ),
-        );
-        Navigator.pop(context, true);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.vehicle != null
-                  ? "Failed to update vehicle."
-                  : "Failed to add vehicle.",
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _deleteVehicle() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: const Text("Delete Vehicle"),
-          content: const Text(
-            "This action cannot be undone. Are you sure you want to delete?",
-          ),
-          actions: [
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () => Navigator.of(ctx).pop(false),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Delete"),
-              onPressed: () => Navigator.of(ctx).pop(true),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirm != true) return;
-
-    try {
-      await Supabase.instance.client
-          .from('vehicles')
-          .delete()
-          .eq('vehicle_id', widget.vehicle!.vehicleId);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vehicle deleted successfully")),
-        );
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error deleting vehicle: $e")));
-    }
-  }
-
-  Future<void> _shareVehicle() async {
-    if (widget.vehicle == null) return;
-    final v = widget.vehicle!;
-    final details =
-        '''
-🚗 Vehicle Details
-------------------------
-Name: ${v.vehicleName} (${v.vehicleYear})
-Owner: ${v.ownerName}
-Number: ${v.vehicleNumber}
-Service KM: ${v.serviceKm}
-Battery: ${v.battery ?? 'N/A'}
-Alignment: ${v.alignment ?? 'N/A'}
-
-Insurance: ${_formatDate(v.insuranceStarts)} → ${_formatDate(v.insuranceEnds)}
-Pollution: ${_formatDate(v.pollutionStarts)} → ${_formatDate(v.pollutionEnds)}
-
-Notes: ${v.notes ?? 'N/A'}
-Shared: ${v.sharedWith ? "Yes" : "No"}
-Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
-''';
-    await Share.share(details, subject: 'Vehicle Info');
-  }
-
-  String _formatDate(DateTime? dt) =>
-      dt != null ? dt.toLocal().toString().split(' ')[0] : "N/A";
-
-  // --- UI Widgets ---
-  Widget _sectionTitle(String title) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    child: Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    ),
-  );
-
-  Widget _inputField({
-    required TextEditingController controller,
-    required String hint,
-    IconData? icon,
-    String? Function(String?)? validator,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: TextFormField(
-        controller: controller,
-        enabled: _isEditing,
-        validator: validator,
-        decoration: InputDecoration(
-          prefixIcon: icon != null ? Icon(icon) : null,
-          hintText: hint,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _dateField({
-    required String label,
-    required DateTime? date,
-    required Function(DateTime) onPicked,
-    IconData icon = Icons.calendar_today,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blueAccent),
-        title: Text(label),
-        subtitle: Text(
-          date != null ? _formatDate(date) : "Not selected",
-          style: TextStyle(color: date != null ? Colors.black : Colors.grey),
-        ),
-        trailing: _isEditing ? const Icon(Icons.edit_calendar) : null,
-        onTap: () async => await _pickDate(onPicked),
-      ),
-    );
-  }
-
-  Widget _buildFABs() {
-    if (_isEditing || widget.vehicle == null) {
-      return FloatingActionButton.extended(
-        backgroundColor: Colors.green,
-        icon: const Icon(Icons.check),
-        label: const Text("Save"),
-        onPressed: _saveVehicle,
-      );
-    } else {
-      return SpeedDial(
-        icon: Icons.more_vert,
-        activeIcon: Icons.close,
-        backgroundColor: Colors.blueAccent,
-        overlayColor: Colors.black54,
-        overlayOpacity: 0.5,
-        spacing: 12,
-        spaceBetweenChildren: 8,
-        children: [
-          SpeedDialChild(
-            child: const Icon(Icons.edit, color: Colors.white),
-            label: "Edit",
-            backgroundColor: Colors.blue,
-            onTap: () => setState(() => _isEditing = true),
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.delete, color: Colors.white),
-            label: "Delete",
-            backgroundColor: Colors.red,
-            onTap: _deleteVehicle,
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.share, color: Colors.white),
-            label: "Share",
-            backgroundColor: Colors.green,
-            onTap: _shareVehicle,
-          ),
-          SpeedDialChild(
-            child: const Icon(Icons.add, color: Colors.black),
-            label: "Add new",
-            backgroundColor: Colors.white,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const AddVehiclePage(vehicle: null, isEditing: true),
-                ),
-              );
-            },
-          ),
-        ],
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _ownerController.dispose();
-    _vehicleNameController.dispose();
-    _vehicleNumberController.dispose();
-    _vehicleYearController.dispose();
-    _serviceKmController.dispose();
-    _batteryController.dispose();
-    _alignmentController.dispose();
-    _notesController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final vehicleProvider = context.watch<VehicleProvider>();
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(
-          widget.vehicle != null
-              ? (_isEditing ? "Edit Vehicle" : "Vehicle Details")
-              : "Add Vehicle",
-        ),
-        centerTitle: true,
-      ),
-      floatingActionButton: _buildFABs(),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Vehicle Image section
-              Center(
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: _imageFile != null
-                          ? Image.file(
-                              _imageFile!,
-                              height: 150,
-                              width: 150,
-                              fit: BoxFit.cover,
-                            )
-                          : _existingImageUrl != null
-                          ? FutureBuilder<String?>(
-                              future: context
-                                  .read<VehicleProvider>()
-                                  .getSignedImageUrl(
-                                    _existingImageUrl!.replaceFirst(
-                                      RegExp(r'^.*vehicle-images2/'),
-                                      '',
-                                    ),
-                                  ),
-                              builder: (ctx, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const SizedBox(
-                                    height: 150,
-                                    width: 150,
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  );
-                                }
-                                if (snapshot.hasError ||
-                                    snapshot.data == null) {
-                                  return Container(
-                                    height: 150,
-                                    width: 150,
-                                    color: Colors.grey.shade300,
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      size: 40,
-                                    ),
-                                  );
-                                }
-                                return Image.network(
-                                  snapshot.data!,
-                                  height: 150,
-                                  width: 150,
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            )
-                          : Container(
-                              height: 150,
-                              width: 150,
-                              color: Colors.grey.shade300,
-                              child: const Icon(Icons.directions_car, size: 50),
-                            ),
-                    ),
-                    if (_isEditing)
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: FloatingActionButton.small(
-                          heroTag: "pickImage",
-                          onPressed: _pickImage,
-                          child: const Icon(Icons.camera_alt),
-                        ),
-                      ),
-                  ],
+      appBar: AppBar(title: const Text("Add Vehicle")),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            /// Image Upload
+            VehicleImageUploader(
+              imageFile: _pickedImage,
+              onPick: () async {
+                // TODO: Move to provider or image util
+              },
+            ),
+
+            /// Vehicle Info
+            VehicleFormSection(
+              title: "Vehicle Info",
+              fields: [
+                AppTextField(controller: _ownerCtrl, label: "Owner Name"),
+                AppTextField(controller: _nameCtrl, label: "Vehicle Name"),
+                AppTextField(controller: _numberCtrl, label: "Number Plate"),
+                AppTextField(
+                  controller: _yearCtrl,
+                  label: "Year",
+                  keyboardType: TextInputType.number,
                 ),
-              ),
+              ],
+            ),
 
-              // Input sections
-              _sectionTitle("Basic Information"),
-              _inputField(
-                controller: _ownerController,
-                hint: 'Owner Name',
-                icon: Icons.person,
-                validator: (val) =>
-                    val == null || val.isEmpty ? "Required" : null,
-              ),
-              _inputField(
-                controller: _vehicleNameController,
-                hint: "Vehicle Name",
-                icon: Icons.directions_car,
-                validator: (val) =>
-                    val == null || val.isEmpty ? "Required" : null,
-              ),
-              _inputField(
-                controller: _vehicleNumberController,
-                hint: "Vehicle Number",
-                icon: Icons.confirmation_number,
-                validator: (val) =>
-                    val == null || val.isEmpty ? "Required" : null,
-              ),
-              _inputField(
-                controller: _vehicleYearController,
-                hint: "Vehicle Year",
-                icon: Icons.calendar_month,
-                validator: (val) =>
-                    val == null || val.isEmpty ? "Required" : null,
-              ),
-
-              _sectionTitle("Insurance Details"),
-              _dateField(
-                label: "Insurance Start",
-                date: _insuranceStarts,
-                onPicked: (picked) => _insuranceStarts = picked,
-              ),
-              _dateField(
-                label: "Insurance End",
-                date: _insuranceEnds,
-                onPicked: (picked) => _insuranceEnds = picked,
-              ),
-
-              _sectionTitle("Pollution Details"),
-              _dateField(
-                label: "Pollution Start",
-                date: _pollutionStarts,
-                onPicked: (picked) => _pollutionStarts = picked,
-              ),
-              _dateField(
-                label: "Pollution End",
-                date: _pollutionEnds,
-                onPicked: (picked) => _pollutionEnds = picked,
-              ),
-
-              _sectionTitle("Other Info"),
-              _inputField(
-                controller: _serviceKmController,
-                hint: "Service KM",
-                icon: Icons.speed,
-              ),
-              _inputField(
-                controller: _batteryController,
-                hint: "Battery (Optional)",
-                icon: Icons.battery_charging_full,
-              ),
-              _inputField(
-                controller: _alignmentController,
-                hint: "Alignment (Optional)",
-                icon: Icons.tune,
-              ),
-              _inputField(
-                controller: _notesController,
-                hint: "Notes (Optional)",
-                icon: Icons.note,
-              ),
-
-              const SizedBox(height: 12),
-              SwitchListTile(
-                title: const Text("Need Notifications"),
-                subtitle: const Text(
-                  "Enable reminders for services & insurance",
+            /// Service Info
+            VehicleFormSection(
+              title: "Service Details",
+              fields: [
+                AppTextField(
+                  controller: _serviceKmCtrl,
+                  label: "Service KM",
+                  keyboardType: TextInputType.number,
                 ),
-                value: _needNotification,
-                onChanged: _isEditing
-                    ? (val) => setState(() => _needNotification = val)
-                    : null,
-              ),
-              SwitchListTile(
-                title: const Text("Shared With Others"),
-                subtitle: const Text("Allow other users to view this vehicle"),
-                value: _sharedWith,
-                onChanged: _isEditing
-                    ? (val) => setState(() => _sharedWith = val)
-                    : null,
-              ),
+                AppTextField(
+                  controller: _notesCtrl,
+                  label: "Notes",
+                  multiline: true,
+                ),
+              ],
+            ),
 
-              const SizedBox(height: 20),
-              if (_isLoading) const Center(child: CircularProgressIndicator()),
-            ],
-          ),
+            /// Switches
+            VehicleSwitches(
+              needNotification: _needNotification,
+              sharedWith: _sharedWith,
+              onNotificationChanged: (v) =>
+                  setState(() => _needNotification = v),
+              onSharedChanged: (v) => setState(() => _sharedWith = v),
+            ),
+          ],
         ),
       ),
+
+      /// Save Button
+      floatingActionButton: AppFab(
+  icon: Icons.save,
+  onPressed: () async {
+    final vehicle = VehicleModel(
+      vehicleId: widget.vehicle?.vehicleId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      ownerName: _ownerCtrl.text,
+      vehicleName: _nameCtrl.text,
+      vehicleNumber: _numberCtrl.text,
+      vehicleYear: _yearCtrl.text,
+      serviceKm: _serviceKmCtrl.text,
+      notes: _notesCtrl.text,
+      needNotification: _needNotification,
+      sharedWith: _sharedWith,
+      userAuthUuid: vehicleProvider.supabase.auth.currentUser?.id ?? "",
+      vehicleAddedBy: vehicleProvider.supabase.auth.currentUser?.email ?? "",
+    );
+
+    bool success;
+    if (widget.isEditing) {
+      success = await vehicleProvider.updateVehicle(vehicle);
+    } else {
+      success = await vehicleProvider.addVehicle(vehicle);
+    }
+
+    if (success && mounted) {
+      AppSnackbar.show(context, widget.isEditing ? "Vehicle updated!" : "Vehicle added!");
+      Navigator.pop(context, true);
+    } else {
+      AppSnackbar.show(context, "Failed to save vehicle", isError: true);
+    }
+  },
+),
+
     );
   }
 }

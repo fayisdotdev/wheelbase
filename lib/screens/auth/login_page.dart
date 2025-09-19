@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:wheelbase/provider/auth_provider.dart';
 import 'package:wheelbase/screens/auth/signup_page.dart';
 import 'package:wheelbase/screens/home/home_screen.dart';
-import 'package:wheelbase/themes/app/buttons.dart';
-import 'package:wheelbase/themes/app/inputs.dart';
+import 'package:wheelbase/themes/app-1/buttons.dart';
+import 'package:wheelbase/themes/app-1/inputs.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

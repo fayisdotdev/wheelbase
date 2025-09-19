@@ -4,8 +4,8 @@ import 'package:wheelbase/provider/auth_provider.dart';
 import 'package:wheelbase/screens/profile/profile_page.dart';
 import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
 import 'package:wheelbase/screens/vehicle/vehicle_list.dart';
-import 'package:wheelbase/themes/app/appbar.dart';
-import 'package:wheelbase/themes/app/apploaders.dart';
+import 'package:wheelbase/themes/app-1/appbar.dart';
+import 'package:wheelbase/themes/app-1/apploaders.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
