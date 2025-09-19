@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:wheelbase/models/vehicles_model.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
 import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
-// import 'package:wheelbase/screens/vehicle/detailed_page.dart'; // Import the detailed page
+import 'package:wheelbase/themes/app/appbar.dart';
+import 'package:wheelbase/themes/app/apploaders.dart';
+import 'package:wheelbase/themes/app/snackbars.dart';
+import 'package:wheelbase/utils/date_utils.dart';
 
 class VehicleListPage extends StatefulWidget {
   const VehicleListPage({super.key});
@@ -25,24 +28,22 @@ class _VehicleListPageState extends State<VehicleListPage> {
     _vehiclesFuture = context.read<VehicleProvider>().fetchVehicles();
   }
 
-  String formatDate(DateTime? dt) =>
-      dt != null ? "${dt.toLocal().toString().split(' ')[0]}" : "N/A";
+  Future<void> _refreshVehicles() async {
+    setState(() {
+      _vehiclesFuture = context.read<VehicleProvider>().fetchVehicles();
+    });
+    await _vehiclesFuture;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Vehicles"),
+      appBar: AppAppBar(
+        titleText: "My Vehicles",
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () async {
-              _loadVehicles();
-              setState(() {});
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🔄 Vehicles reloaded')),
-              );
-            },
+            onPressed: _refreshVehicles,
           ),
         ],
       ),
@@ -50,41 +51,36 @@ class _VehicleListPageState extends State<VehicleListPage> {
         future: _vehiclesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AppLoader();
           }
 
           if (snapshot.hasError) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              AppSnackBar.show(context, "Error: ${snapshot.error}");
+            });
             return Center(child: Text("Error: ${snapshot.error}"));
           }
 
           final vehicles = snapshot.data ?? [];
 
           if (vehicles.isEmpty) {
-            return const Center(child: Text("No vehicles found"));
+            return const Center(child: Text("No vehicles found."));
           }
 
           return RefreshIndicator(
-            onRefresh: () async {
-              _loadVehicles();
-              await _vehiclesFuture;
-              setState(() {});
-            },
+            onRefresh: _refreshVehicles,
             child: ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: vehicles.length,
               itemBuilder: (context, index) {
                 final v = vehicles[index];
-
                 return GestureDetector(
-                  // user clicked the whole card
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => AddVehiclePage(
-                          vehicle: v,
-                          isEditing: false, // 👈 start in read-only mode
-                        ),
+                        builder: (_) =>
+                            AddVehiclePage(vehicle: v, isEditing: false),
                       ),
                     );
                   },
@@ -98,7 +94,6 @@ class _VehicleListPageState extends State<VehicleListPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 🔹 Vehicle image
                         if (v.imageUrl != null && v.imageUrl!.isNotEmpty)
                           FutureBuilder<String?>(
                             future: context
@@ -152,8 +147,6 @@ class _VehicleListPageState extends State<VehicleListPage> {
                               ),
                             ),
                           ),
-
-                        // 🔹 Vehicle info
                         Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
@@ -175,10 +168,10 @@ class _VehicleListPageState extends State<VehicleListPage> {
                               Text("Alignment: ${v.alignment ?? 'N/A'}"),
                               const Divider(),
                               Text(
-                                "Insurance: ${formatDate(v.insuranceStarts)} → ${formatDate(v.insuranceEnds)}",
+                                "Insurance: ${DateUtilsWB.formatDate(v.insuranceStarts)} → ${DateUtilsWB.formatDate(v.insuranceEnds)}",
                               ),
                               Text(
-                                "Pollution: ${formatDate(v.pollutionStarts)} → ${formatDate(v.pollutionEnds)}",
+                                "Pollution: ${DateUtilsWB.formatDate(v.pollutionStarts)} → ${DateUtilsWB.formatDate(v.pollutionEnds)}",
                               ),
                               const Divider(),
                               Text("Notes: ${v.notes ?? 'N/A'}"),
@@ -187,24 +180,19 @@ class _VehicleListPageState extends State<VehicleListPage> {
                                 "Notification: ${v.needNotification ? "On" : "Off"}",
                               ),
                               const SizedBox(height: 8),
-
-                              // 🔹 Edit button
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: ElevatedButton.icon(
-                                  // pressed edit
                                   onPressed: () async {
                                     final result = await Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => AddVehiclePage(
                                           vehicle: v,
-                                          isEditing:
-                                              true, // 👈 start directly in edit mode
+                                          isEditing: true,
                                         ),
                                       ),
                                     );
-
                                     if (result == true) {
                                       setState(() => _loadVehicles());
                                     }

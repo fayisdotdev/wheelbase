@@ -5,6 +5,8 @@ import 'package:wheelbase/screens/auth/signup_page.dart';
 import 'package:wheelbase/screens/home/home_screen.dart';
 import 'package:wheelbase/themes/app/buttons.dart';
 import 'package:wheelbase/themes/app/inputs.dart';
+import 'package:wheelbase/themes/app/apploaders.dart';
+import 'package:wheelbase/themes/app/appbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -62,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
+      appBar: const AppAppBar(titleText: "Login"),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -76,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     : null,
                 hint: 'Email',
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               AppInputForm(
                 controller: _passwordController,
                 validator: (val) =>
@@ -88,33 +90,28 @@ class _LoginScreenState extends State<LoginScreen> {
               if (_errorMessage != null)
                 Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 20),
-if (_errorMessage != null)
-  Text(
-    _errorMessage!,
-    style: const TextStyle(color: Colors.red),
-  ),
-const SizedBox(height: 20),
-AppButton(
-  onPressed: _loading ? null : () => _handleLogin(),
-  label: 'Login',
-),
-const SizedBox(height: 20),
-Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    const Text("Don't have an account?"),
-    TextButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SignupScreen()),
-        );
-      },
-      child: const Text("Sign Up"),
-    ),
-  ],
-),
-
+              _loading
+                  ? const AppLoader()
+                  : AppButton(
+                      onPressed: _loading ? null : () => _handleLogin(),
+                      label: 'Login',
+                    ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Don't have an account?"),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SignupScreen()),
+                      );
+                    },
+                    child: const Text("Sign Up"),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

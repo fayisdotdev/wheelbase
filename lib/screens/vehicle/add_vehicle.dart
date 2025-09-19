@@ -10,7 +10,9 @@ import 'package:wheelbase/models/vehicles_model.dart';
 import 'package:wheelbase/provider/vehicle_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-// import 'package:wheelbase/themes/app/inputs.dart';
+import 'package:wheelbase/themes/app/datepicker.dart';
+import 'package:wheelbase/themes/app/inputs.dart';
+import 'package:wheelbase/themes/app/apploaders.dart';
 
 class AddVehiclePage extends StatefulWidget {
   final VehicleModel? vehicle;
@@ -294,55 +296,9 @@ Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
     ),
   );
 
-  Widget _inputField({
-    required TextEditingController controller,
-    required String hint,
-    IconData? icon,
-    String? Function(String?)? validator,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: TextFormField(
-        controller: controller,
-        enabled: _isEditing,
-        validator: validator,
-        decoration: InputDecoration(
-          prefixIcon: icon != null ? Icon(icon) : null,
-          hintText: hint,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-        ),
-      ),
-    );
-  }
+  // Use AppInputForm for all input fields
 
-  Widget _dateField({
-    required String label,
-    required DateTime? date,
-    required Function(DateTime) onPicked,
-    IconData icon = Icons.calendar_today,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blueAccent),
-        title: Text(label),
-        subtitle: Text(
-          date != null ? _formatDate(date) : "Not selected",
-          style: TextStyle(color: date != null ? Colors.black : Colors.grey),
-        ),
-        trailing: _isEditing ? const Icon(Icons.edit_calendar) : null,
-        onTap: () async => await _pickDate(onPicked),
-      ),
-    );
-  }
+  // Use AppDatePicker for all date fields
 
   Widget _buildFABs() {
     if (_isEditing || widget.vehicle == null) {
@@ -510,79 +466,87 @@ Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
 
               // Input sections
               _sectionTitle("Basic Information"),
-              _inputField(
+              AppInputForm(
                 controller: _ownerController,
                 hint: 'Owner Name',
-                icon: Icons.person,
                 validator: (val) =>
                     val == null || val.isEmpty ? "Required" : null,
               ),
-              _inputField(
+              AppInputForm(
                 controller: _vehicleNameController,
                 hint: "Vehicle Name",
-                icon: Icons.directions_car,
                 validator: (val) =>
                     val == null || val.isEmpty ? "Required" : null,
               ),
-              _inputField(
+              AppInputForm(
                 controller: _vehicleNumberController,
                 hint: "Vehicle Number",
-                icon: Icons.confirmation_number,
                 validator: (val) =>
                     val == null || val.isEmpty ? "Required" : null,
               ),
-              _inputField(
+              AppInputForm(
                 controller: _vehicleYearController,
                 hint: "Vehicle Year",
-                icon: Icons.calendar_month,
                 validator: (val) =>
                     val == null || val.isEmpty ? "Required" : null,
               ),
 
               _sectionTitle("Insurance Details"),
-              _dateField(
+              AppDatePicker(
                 label: "Insurance Start",
                 date: _insuranceStarts,
-                onPicked: (picked) => _insuranceStarts = picked,
+                onPick: () async {
+                  await _pickDate((picked) {
+                    setState(() => _insuranceStarts = picked);
+                  });
+                },
               ),
-              _dateField(
+              AppDatePicker(
                 label: "Insurance End",
                 date: _insuranceEnds,
-                onPicked: (picked) => _insuranceEnds = picked,
+                onPick: () async {
+                  await _pickDate((picked) {
+                    setState(() => _insuranceEnds = picked);
+                  });
+                },
               ),
 
               _sectionTitle("Pollution Details"),
-              _dateField(
+              AppDatePicker(
                 label: "Pollution Start",
                 date: _pollutionStarts,
-                onPicked: (picked) => _pollutionStarts = picked,
+                onPick: () async {
+                  await _pickDate((picked) {
+                    setState(() => _pollutionStarts = picked);
+                  });
+                },
               ),
-              _dateField(
+              AppDatePicker(
                 label: "Pollution End",
                 date: _pollutionEnds,
-                onPicked: (picked) => _pollutionEnds = picked,
+                onPick: () async {
+                  await _pickDate((picked) {
+                    setState(() => _pollutionEnds = picked);
+                  });
+                },
               ),
 
               _sectionTitle("Other Info"),
-              _inputField(
+              AppInputForm(
                 controller: _serviceKmController,
                 hint: "Service KM",
-                icon: Icons.speed,
               ),
-              _inputField(
+              AppInputForm(
                 controller: _batteryController,
                 hint: "Battery (Optional)",
-                icon: Icons.battery_charging_full,
               ),
-              _inputField(
+              AppInputForm(
                 controller: _alignmentController,
                 hint: "Alignment (Optional)",
-                icon: Icons.tune,
               ),
-              _inputField(
+              AppInputForm(
                 controller: _notesController,
                 hint: "Notes (Optional)",
-                icon: Icons.note,
               ),
 
               const SizedBox(height: 12),
@@ -606,7 +570,7 @@ Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
               ),
 
               const SizedBox(height: 20),
-              if (_isLoading) const Center(child: CircularProgressIndicator()),
+              if (_isLoading) Center(child: AppLoader()),
             ],
           ),
         ),

@@ -1,3 +1,7 @@
+import 'package:wheelbase/themes/app/inputs.dart';
+import 'package:wheelbase/themes/app/buttons.dart';
+import 'package:wheelbase/themes/app/apploaders.dart';
+import 'package:wheelbase/themes/app/appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wheelbase/provider/auth_provider.dart';
@@ -65,36 +69,39 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Signup")),
+      appBar: const AppAppBar(titleText: "Signup"),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
+              AppInputForm(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: "Name"),
+                hint: "Name",
                 validator: (val) =>
                     val == null || val.isEmpty ? "Enter your name" : null,
               ),
-              TextFormField(
+              const SizedBox(height: 16),
+              AppInputForm(
                 controller: _phoneController,
-                decoration: const InputDecoration(labelText: "Phone"),
+                hint: "Phone",
                 validator: (val) =>
                     val == null || val.isEmpty ? "Enter your phone" : null,
               ),
-              TextFormField(
+              const SizedBox(height: 16),
+              AppInputForm(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: "Email"),
+                hint: "Email",
                 validator: (val) => val == null || !val.contains("@")
                     ? "Enter a valid email"
                     : null,
               ),
-              TextFormField(
+              const SizedBox(height: 16),
+              AppInputForm(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
+                hint: "Password",
+                isPassword: true,
                 validator: (val) =>
                     val == null || val.length < 6 ? "Password too short" : null,
               ),
@@ -102,12 +109,12 @@ class _SignupScreenState extends State<SignupScreen> {
               if (_errorMessage != null)
                 Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _loading ? null : _handleSignup,
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Sign Up"),
-              ),
+              _loading
+                  ? const AppLoader()
+                  : AppButton(
+                      onPressed: _loading ? null : _handleSignup,
+                      label: "Sign Up",
+                    ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
