@@ -1,3 +1,4 @@
+// vehicle_provider.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -30,6 +31,22 @@ class VehicleProvider extends ChangeNotifier {
       return true;
     } catch (e, stack) {
       debugPrint("Error updating vehicle: $e\n$stack");
+      return false;
+    }
+  }
+
+  Future<bool> deleteVehicle(String vehicleId) async {
+    try {
+      debugPrint("Deleting vehicle: $vehicleId");
+      final response = await supabase
+          .from("vehicles")
+          .delete()
+          .eq("vehicle_id", vehicleId);
+      debugPrint("Delete vehicle response: $response");
+      notifyListeners();
+      return true;
+    } catch (e, stack) {
+      debugPrint("Error deleting vehicle: $e\n$stack");
       return false;
     }
   }
@@ -78,7 +95,7 @@ class VehicleProvider extends ChangeNotifier {
           .from('vehicles')
           .select()
           .eq('vehicle_added_by', user.id)
-          .order('uploaded_at', ascending: false);
+          .order('vehicle_year', ascending: true);
 
       debugPrint("Fetch vehicles response: $response");
 
@@ -89,7 +106,6 @@ class VehicleProvider extends ChangeNotifier {
     }
   }
 
-  // In VehicleProvider, add a method:
   Future<String?> getSignedImageUrl(String path) async {
     try {
       final res = await supabase.storage

@@ -114,10 +114,10 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
         _insuranceEnds == null ||
         _pollutionStarts == null ||
         _pollutionEnds == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please complete all date fields")),
-      );
-      return;
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text("Please complete all date fields")),
+      // );
+      // return;
     }
 
     setState(() => _isLoading = true);
@@ -147,7 +147,9 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
       // Create vehicle object
       final vehicle = VehicleModel(
         vehicleId: widget.vehicle?.vehicleId ?? const Uuid().v4(),
-        ownerName: _ownerController.text.trim(),
+        ownerName: _ownerController.text.trim().isEmpty
+            ? 'Unknown - App'
+            : _ownerController.text.trim(),
         vehicleName: _vehicleNameController.text.trim(),
         vehicleNumber: _vehicleNumberController.text.trim(),
         vehicleYear: _vehicleYearController.text.trim(),
@@ -275,7 +277,7 @@ Alignment: ${v.alignment ?? 'N/A'}
 Insurance: ${_formatDate(v.insuranceStarts)} → ${_formatDate(v.insuranceEnds)}
 Pollution: ${_formatDate(v.pollutionStarts)} → ${_formatDate(v.pollutionEnds)}
 
-Notes: ${v.notes ?? 'N/A'}
+Notes: ${v.notes ?? 'No Notes'}
 Shared: ${v.sharedWith ? "Yes" : "No"}
 Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
 ''';
@@ -283,7 +285,7 @@ Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
   }
 
   String _formatDate(DateTime? dt) =>
-      dt != null ? dt.toLocal().toString().split(' ')[0] : "N/A";
+      dt != null ? dt.toLocal().toString().split(' ')[0] : "Not Set";
 
   // --- UI Widgets ---
   Widget _sectionTitle(String title) => Padding(
@@ -510,13 +512,13 @@ Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
 
               // Input sections
               _sectionTitle("Basic Information"),
-              _inputField(
-                controller: _ownerController,
-                hint: 'Owner Name',
-                icon: Icons.person,
-                validator: (val) =>
-                    val == null || val.isEmpty ? "Required" : null,
-              ),
+              // _inputField(
+              //   controller: _ownerController,
+              //   hint: 'Owner Name',
+              //   icon: Icons.person,
+              //   // validator: (val) =>
+              //   //     val == null || val.isEmpty ? "Required" : null,
+              // ),
               _inputField(
                 controller: _vehicleNameController,
                 hint: "Vehicle Name",
@@ -566,7 +568,7 @@ Notifications: ${v.needNotification ? "Enabled" : "Disabled"}
               _sectionTitle("Other Info"),
               _inputField(
                 controller: _serviceKmController,
-                hint: "Service KM",
+                hint: "Service K M ",
                 icon: Icons.speed,
               ),
               _inputField(

@@ -2,18 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wheelbase/provider/auth_provider.dart';
 import 'package:wheelbase/screens/profile/profile_page.dart';
-import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
+// import 'package:wheelbase/screens/vehicle/add_vehicle.dart';
+import 'package:wheelbase/screens/vehicle/add_vehicle_page.dart';
 import 'package:wheelbase/screens/vehicle/vehicle_list.dart';
 import 'package:wheelbase/themes/app/appbar.dart';
 import 'package:wheelbase/themes/app/apploaders.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-
     if (authProvider.profile == null) {
       return const Scaffold(body: AppLoader());
     }
@@ -35,9 +49,7 @@ class HomePage extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              authProvider.logout(context);
-            },
+            onPressed: () => authProvider.logout(context),
           ),
         ],
       ),
@@ -51,8 +63,34 @@ class HomePage extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
-          // Use Expanded so the VehicleListPage scrolls properly inside Column
-          const Expanded(child: VehicleListPage()),
+
+          // --- Search Bar ---
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: "Search vehicles...",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                isDense: true,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.trim().toLowerCase();
+                });
+              },
+            ),
+          ),
+
+          // Vehicle list
+          Expanded(
+            child: VehicleListPage(
+              searchQuery: _searchQuery,
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
