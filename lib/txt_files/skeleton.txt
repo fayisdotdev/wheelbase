@@ -1,0 +1,32 @@
+lib/
+ ├── themes/
+ │    ├── app/
+ │    │     ├── inputs.dart
+ │    │     ├── datepicker.dart
+ │    │     ├── apploaders.dart
+ │    │     ├── app_section_title.dart      // NEW
+ │    │     ├── app_image_picker.dart       // NEW
+ │    │     ├── app_switch_tile.dart        // NEW
+ │    │     ├── app_fab.dart                // NEW
+ │    │     ├── app_snackbar.dart           // NEW
+ │    │
+ │    └── vehicle/                         // optional, vehicle theme widgets
+ │          └── vehicle_theme.dart         // (future: icons/colors just for vehicles)
+ │
+ ├── features/
+ │    └── vehicle/
+ │          ├── models/
+ │          │     └── vehicle_model.dart
+ │          │
+ │          ├── providers/
+ │          │     └── vehicle_provider.dart
+ │          │
+ │          ├── widgets/
+ │          │     ├── vehicle_form_section.dart     // groups vehicle inputs
+ │          │     ├── vehicle_image_uploader.dart   // uses AppImagePicker + provider
+ │          │     ├── vehicle_switches.dart         // vehicle toggles
+ │          │
+ │          └── pages/
+ │                └── add_vehicle_page.dart         // just assembles everything
+ │
+ └── main.dart
